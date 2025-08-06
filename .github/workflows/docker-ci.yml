@@ -1,0 +1,61 @@
+name: Docker CI Pipeline Demo
+
+on: workflow_dispatch
+
+jobs:
+  build-react:
+    name: Build React App
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build React App
+        run: npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: react-build
+          path: build
+
+  dockerize:
+    name: Dockerize React App
+    needs: build-react
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: react-build
+          path: build
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        run: |
+          docker build -t react-dashboard:ci-demo .
+
+      - name: Save Docker Image as Artifact
+        run: |
+          docker save react-dashboard:ci-demo -o react-dashboard.tar
+
+      - name: Upload Docker Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: react-dashboard.tar
